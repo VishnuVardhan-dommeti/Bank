@@ -142,3 +142,32 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'   # Redis as Broker
 CELERY_RESULT_BACKEND = 'django-db'               # MySQL as Result Backend
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # or your SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'dvvardhan91@gmail.com'  # your email
+EMAIL_HOST_PASSWORD = '@Vittuvijju7'  # your email password or app password
+
+# Cache settings (using Redis recommended)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# CORS Configuration
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+CORS_EXPOSE_HEADERS = ['X-CSRFToken']

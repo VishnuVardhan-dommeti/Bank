@@ -1,0 +1,114 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4>Deposit</h4>
+    <div class="card p-4 shadow-sm">
+        <form method="POST" id="depositForm" action="{% url 'deposit_view' %}">
+            {% csrf_token %}
+
+            <!-- Account Number Input -->
+            <div class="mb-3">
+                <label for="account" class="form-label fw-bold">Account Number</label>
+                <input type="text" class="form-control border-success" id="account" name="account" required>
+            </div>
+
+            <!-- Account Details (Initially Hidden) -->
+            <div id="accountDetails" class="row mt-3" style="display: none;">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Name</label>
+                    <input type="text" class="form-control bg-light" id="name" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Balance</label>
+                    <input type="text" class="form-control bg-light" id="balance" readonly>
+                </div>
+            </div>
+
+            <!-- Deposit Amount -->
+            <div class="mb-3 mt-3">
+                <label for="amount" class="form-label fw-bold">Deposit Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+
+            <!-- Submit & Cancel Buttons -->
+            <button type="submit" class="btn btn-primary" id="submitBtn">Submit</button>
+            <a href="{% url 'transactions' %}" class="btn btn-light">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<!-- jQuery -->
+<!-- Include SweetAlert2 (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const depositForm = document.getElementById("depositForm");
+        const submitBtn = document.getElementById("submitBtn");
+    
+        document.getElementById("account").addEventListener("input", function () {  
+            let accountNumber = this.value.trim();
+    
+            if (accountNumber.length === 10) {
+                fetch(`/custom_admin/deposit/?account_number=${accountNumber}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            document.getElementById("name").value = data.name;
+                            document.getElementById("balance").value = data.balance;
+                            document.getElementById("accountDetails").style.display = "block"; 
+                        } else {
+                            alert("Account not found!");
+                            document.getElementById("name").value = "";
+                            document.getElementById("balance").value = "";
+                            document.getElementById("accountDetails").style.display = "none"; 
+                        }
+                    })
+                    .catch(error => console.error("Error fetching account details:", error));
+            }
+        });
+    
+        depositForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+    
+            submitBtn.disabled = true; // Disable button to prevent multiple clicks
+    
+            let formData = new FormData(this);
+    
+            fetch(depositForm.action, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server Response:", data); // Debugging log
+    
+                if (data.status === "success") {
+                    Swal.fire({
+                        title: "Deposit Successful!",
+                        text: `New Balance: Rs.${data.new_balance}`,
+                        icon: "success",
+                        confirmButtonText: "OK",
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
+                        window.location.href = "{% url 'transactions' %}"; // Redirect after clicking OK
+                    });
+                } else {
+                    Swal.fire("Error", data.message, "error");
+                    submitBtn.disabled = false; // Re-enable button if error occurs
+                }
+            })
+            .catch(error => {
+                console.error("Error processing deposit:", error);
+                submitBtn.disabled = false; // Re-enable button if fetch fails
+            });
+        });
+    });
+    </script>
+    
+{% endblock %}

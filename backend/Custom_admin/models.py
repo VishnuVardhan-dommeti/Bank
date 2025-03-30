@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 
 # 🔹 Branch Model
 class Branch(models.Model):
@@ -35,12 +36,12 @@ class Customer(models.Model):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, unique=True)
     date_of_birth = models.DateField()
-    national_id = models.CharField(max_length=20, unique=True)
+    
     gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')])
-    marital_status = models.CharField(max_length=10, choices=[('Single', 'Single'), ('Married', 'Married'), ('Divorced', 'Divorced'), ('Widowed', 'Widowed')])
+    
     occupation = models.CharField(max_length=100, blank=True, null=True)
     income = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    risk_category = models.CharField(max_length=10, choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High')], default='Low')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -74,11 +75,18 @@ class Account(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="accounts")
     account_number = models.CharField(max_length=12, unique=True, editable=False, default=uuid.uuid4)
     balance_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
-    overdraft_limit = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    password = models.CharField(max_length=128)
+    
     last_transaction_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Dormant', 'Dormant'), ('Closed', 'Closed')], default='Active')
-    opening_date = models.DateField()
+    
+    
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        """Ensure password is hashed before saving."""
+        if self.password and not self.password.startswith("pbkdf2_sha256$"):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.account_number} - {self.customer.first_name} {self.customer.last_name}"
@@ -107,14 +115,33 @@ class Withdraw(models.Model):
 # 🔹 Deposit Model
 class Deposit(models.Model):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE)
-
-# 🔹 Transfer Model
-class Transfer(models.Model):
+# 🔹 Transfer Out Model (money leaving an account)
+class TransferOut(models.Model):
     from_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="transfers_out")
+    to_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="incoming_transfers")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name="transfer_out")
+
+    class Meta:
+        verbose_name_plural = "Transfers Out"
+
+    def __str__(self):
+        return f"Transfer Out - {self.amount} from {self.from_account.account_number}"
+
+# 🔹 Transfer In Model (money arriving to an account)
+class TransferIn(models.Model):
+    from_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="outgoing_transfers")
     to_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="transfers_in")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name="transfer_in")
 
+    class Meta:
+        verbose_name_plural = "Transfers In"
+
+    def __str__(self):
+        return f"Transfer In - {self.amount} to {self.to_account.account_number}"
 # 🔹 Balance Model
 class Balance(models.Model):
     account = models.OneToOneField(Account, on_delete=models.CASCADE, related_name="balance")

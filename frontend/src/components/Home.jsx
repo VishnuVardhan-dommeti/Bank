@@ -1,49 +1,74 @@
+// src/components/HomePage.jsx
 import React from "react";
-import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./Home.css"; // Import the updated CSS file
+import "./Home.css";
+import { FaSignInAlt, FaUserPlus, FaUniversity, FaMobileAlt, FaPiggyBank } from "react-icons/fa";
 
 const Home = () => {
   return (
-    <div className="home-container text-center">
-      <div className="home-content p-5">
-        <h1 className="text-gradient">Welcome to Mthree Bank</h1>
-        <p className="text-dark">Experience modern banking with security and convenience</p>
-        <div className="mt-4">
-          <Link to="/login" className="btn btn-primary me-2">
-            <i className="fas fa-sign-in-alt"></i> LOGIN
-          </Link>
-          <Link to="/register" className="btn btn-outline-light">
-            <i className="fas fa-user-plus"></i> REGISTER
-          </Link>
-          <br />
-          <Link to="/admin" className="mt-2 d-block text-dark text-decoration-none">Admin Login</Link>
+    <div className="home-container">
+      {/* Navbar */}
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary p-3">
+        <div className="container">
+          <a className="navbar-brand d-flex align-items-center" href="#">
+            <FaUniversity className="me-2" /> <strong>Mthree Bank</strong>
+          </a>
+          <div className="ms-auto">
+            <a className="btn btn-outline-light me-2" href="/login">
+              <FaSignInAlt /> Login
+            </a>
+            <a className="btn btn-outline-light" href="/register">
+              <FaUserPlus /> Register
+            </a>
+          </div>
         </div>
-
-        <div className="row mt-5">
+      </nav>
+      
+      {/* Hero Section */}
+      <header className="hero-section text-center text-white">
+        <div className="container">
+          <h1 className="display-4">Welcome to Mthree Bank</h1>
+          <p className="lead">Experience modern banking with security and convenience</p>
+          <div className="mt-4">
+            <a className="btn btn-lg btn-dark me-3" href="/login">
+              <FaSignInAlt /> Login
+            </a>
+            <a className="btn btn-lg btn-outline-light" href="/register">
+              <FaUserPlus /> Register
+            </a>
+          </div>
+          <p className="mt-3">
+            <a className="text-white" href="/admin">Admin Login</a>
+          </p>
+        </div>
+      </header>
+      
+      {/* Features Section */}
+      <section className="features container py-5">
+        <div className="row text-center">
           <div className="col-md-4">
-            <div className="card custom-card">
-              <i className="fas fa-shield-alt fa-3x icon-style"></i>
-              <h4 className="mt-3">Secure Banking</h4>
+            <div className="feature-card">
+              <FaUniversity className="feature-icon text-primary" />
+              <h3>Secure Banking</h3>
               <p>Bank with confidence using our secure platform</p>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card custom-card">
-              <i className="fas fa-mobile-alt fa-3x icon-style"></i>
-              <h4 className="mt-3">Mobile Banking</h4>
+            <div className="feature-card">
+              <FaMobileAlt className="feature-icon text-success" />
+              <h3>Mobile Banking</h3>
               <p>Access your account anytime, anywhere</p>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card custom-card">
-              <i className="fas fa-chart-line fa-3x icon-style"></i>
-              <h4 className="mt-3">Smart Savings</h4>
+            <div className="feature-card">
+              <FaPiggyBank className="feature-icon text-warning" />
+              <h3>Smart Savings</h3>
               <p>Earn interest and grow your savings</p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

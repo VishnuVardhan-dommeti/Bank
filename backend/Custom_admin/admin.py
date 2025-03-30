@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import (
+from Custom_admin.models import (
     Branch, Employee, Customer, Address,
     AccountType, Account, Transaction,
-    Withdraw, Deposit, Transfer,
+    Withdraw, Deposit, TransferIn, TransferOut,
     Balance, Login, Logout,
     EditAccount, Announcements, InterestTable
 )
@@ -16,7 +16,8 @@ admin.site.register(Account)
 admin.site.register(Transaction)
 admin.site.register(Withdraw)
 admin.site.register(Deposit)
-admin.site.register(Transfer)
+admin.site.register(TransferIn)
+admin.site.register(TransferOut)
 admin.site.register(Balance)
 admin.site.register(Login)
 admin.site.register(Logout)

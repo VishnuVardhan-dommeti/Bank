@@ -1,67 +1,46 @@
 from rest_framework import serializers
-from .models import (
-    Account, Customer, Address, Transaction, Withdraw, Deposit, 
-    TransferIn, TransferOut, AccountType, Balance, Login, Logout
-)
-
-class AccountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = '__all__'
+from .models import Customer, Address, Account, Balance, AccountType, Branch, Transaction
 
 class CustomerSerializer(serializers.ModelSerializer):
-    account = AccountSerializer()
-
     class Meta:
         model = Customer
-        fields = '__all__'
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 
+                'date_of_birth', 'gender', 'occupation', 'income', 'employee']
+        extra_kwargs = {
+            'email': {'required': True},
+            'phone': {'required': True},
+            'gender': {'required': True},
+            'date_of_birth': {'required': True}
+        }
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = '__all__'
+        fields = ['id', 'customer', 'street', 'city', 'state', 
+                 'zip_code', 'country', 'created_at']
+        extra_kwargs = {
+            'customer': {'required': True},
+            'street': {'required': True},
+            'city': {'required': True}
+        }
 
-class TransactionSerializer(serializers.ModelSerializer):
+class AccountSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Transaction
-        fields = '__all__'
-
-class WithdrawSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Withdraw
-        fields = '__all__'
-
-class DepositSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Deposit
-        fields = '__all__'
-
-class TransferInSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransferIn
-        fields = '__all__'
-
-class TransferOutSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransferOut
-        fields = '__all__'
-
-class AccountTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AccountType
-        fields = '__all__'
+        model = Account
+        fields = ['id', 'customer', 'account_type', 'branch', 'account_number',
+                 'balance_amount', 'password', 'last_transaction_date', 'created_at']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'account_number': {'read_only': True},
+            'customer': {'required': True},
+            'account_type': {'required': True},
+            'branch': {'required': True}
+        }
 
 class BalanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Balance
-        fields = '__all__'
-
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Login
-        fields = '__all__'
-
-class LogoutSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Logout
-        fields = '__all__'
+        fields = ['id', 'account', 'balance', 'updated_at']
+        extra_kwargs = {
+            'account': {'required': True}
+        }

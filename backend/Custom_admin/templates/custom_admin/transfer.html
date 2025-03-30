@@ -1,0 +1,168 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4>Transfer</h4>
+    <div class="card p-4 shadow-sm">
+        <form method="POST" id="transferForm" action="{% url 'transfer_view' %}">
+            {% csrf_token %}
+
+            <!-- Sender Account -->
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="sender_account" class="form-label fw-bold">Account Number</label>
+                    <input type="text" class="form-control border-primary" id="sender_account" name="sender_account" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Name</label>
+                    <input type="text" class="form-control bg-light" id="sender_name" readonly>
+                </div>
+            </div>
+
+            <!-- Current Balance -->
+            <div id="balanceSection" class="mt-2" style="display: none;">
+                <span class="fw-bold">Current Balance: </span>
+                <span id="balance" class="text-primary fw-bold"></span>
+            </div>
+
+            <!-- Receiver Account -->
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label for="receiver_account" class="form-label fw-bold">Transfer To</label>
+                    <input type="text" class="form-control border-success" id="receiver_account" name="receiver_account" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Name</label>
+                    <input type="text" class="form-control bg-light" id="receiver_name" readonly>
+                </div>
+            </div>
+
+            <!-- Transfer Amount -->
+            <div class="mb-3 mt-3">
+                <label for="amount" class="form-label fw-bold">Transfer Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+
+            <!-- Submit & Cancel Buttons -->
+            <button type="submit" class="btn btn-primary" id="submitBtn">Submit</button>
+            <a href="{% url 'transactions' %}" class="btn btn-light">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const transferForm = document.getElementById("transferForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function clearSenderInfo() {
+        document.getElementById("sender_name").value = "";
+        document.getElementById("balance").innerText = "";
+        document.getElementById("balanceSection").style.display = "none";
+    }
+
+    function clearReceiverInfo() {
+        document.getElementById("receiver_name").value = "";
+    }
+
+    document.getElementById("sender_account").addEventListener("input", function () {  
+        let senderAccount = this.value.trim();
+
+        if (senderAccount.length === 10) {
+            fetch(`/custom_admin/transfer/?account_number=${senderAccount}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        document.getElementById("sender_name").value = data.name;
+                        document.getElementById("balance").innerText = `Rs. ${data.balance}`;
+                        document.getElementById("balanceSection").style.display = "block"; 
+                    } else {
+                        Swal.fire("Error", "Sender account not found!", "error");
+                        clearSenderInfo();
+                    }
+                })
+                .catch(error => console.error("Error fetching sender details:", error));
+        } else {
+            clearSenderInfo();
+        }
+    });
+
+    document.getElementById("receiver_account").addEventListener("input", function () {  
+        let receiverAccount = this.value.trim();
+        let senderAccount = document.getElementById("sender_account").value.trim();
+
+        if (receiverAccount.length === 10) {
+            if (receiverAccount === senderAccount) {
+                Swal.fire("Error", "Cannot transfer to the same account!", "error");
+                clearReceiverInfo();
+                return;
+            }
+
+            fetch(`/custom_admin/transfer/?account_number=${receiverAccount}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        document.getElementById("receiver_name").value = data.name;
+                    } else {
+                        Swal.fire("Error", "Receiver account not found!", "error");
+                        clearReceiverInfo();
+                    }
+                })
+                .catch(error => console.error("Error fetching receiver details:", error));
+        } else {
+            clearReceiverInfo();
+        }
+    });
+
+    transferForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        submitBtn.disabled = true;
+
+        let formData = new FormData(this);
+        let senderAccount = document.getElementById("sender_account").value.trim();
+        let receiverAccount = document.getElementById("receiver_account").value.trim();
+
+        if (senderAccount === receiverAccount) {
+            Swal.fire("Error", "Cannot transfer to the same account!", "error");
+            submitBtn.disabled = false;
+            return;
+        }
+
+        fetch(transferForm.action, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                Swal.fire({
+                    title: "Transfer Successful!",
+                    text: `New Balance: Rs.${data.new_balance}`,
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    window.location.href = "{% url 'transactions' %}";  
+                });
+            } else {
+                Swal.fire("Error", data.message, "error");
+                submitBtn.disabled = false; 
+            }
+        })
+        .catch(error => {
+            console.error("Error processing transfer:", error);
+            Swal.fire("Error", "Something went wrong!", "error");
+            submitBtn.disabled = false;
+        });
+    });
+});
+</script>
+
+{% endblock %}

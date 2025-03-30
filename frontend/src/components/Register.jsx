@@ -1,213 +1,109 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-    const [formData, setFormData] = useState({
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-        date_of_birth: "",
-        national_id: "",
-        gender: "",
-        marital_status: "",
-        occupation: "",
-        income: "",
-        address: "",
-        city: "",
-        state: "",
-        zip_code: "",
-        account_type: "",
-        branch: "",
-        opening_date: "",
-        balance_amount: "",
-        password: "",
-        confirm_password: "",
-        otp: "",
-    });
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    dob: "",
+    gender: "",
+    occupation: "",
+    income: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+    country: "",
+    account_type: "",
+    branch: "",
+    balance: "",
+    password: "",
+  });
 
-    const [otpSent, setOtpSent] = useState(false);
-    const navigate = useNavigate();
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post("http://127.0.0.1:8000/api/register/", formData);
+      alert("Registration Successful!");
+      navigate("/login");
+    } catch (error) {
+      alert("Error during registration");
+    }
+  };
 
-    const handleOTP = async () => {
-        if (!formData.email) {
-            alert("Please enter an email address first!");
-            return;
-        }
-        try {
-            const response = await axios.post("/api/send-otp/", { email: formData.email }, {
-                headers: { "Content-Type": "application/json" }
-            });
-            if (response.data.success) {
-                setOtpSent(true);
-                alert("OTP sent to your email!");
-            } else {
-                alert("Error sending OTP: " + response.data.message);
-            }
-        } catch (error) {
-            alert("Failed to send OTP.");
-        }
-    };
-    
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (formData.password !== formData.confirm_password) {
-            alert("Passwords do not match!");
-            return;
-        }
-        try {
-            const response = await axios.post("/api/register/", formData);
-            if (response.data.success) {
-                alert("Registration successful!");
-                navigate("/login");
-            } else {
-                alert("Error: " + response.data.message);
-            }
-        } catch (error) {
-            alert("Failed to register.");
-        }
-    };
-
-    return (
-        <div className="container">
-            <div className="row justify-content-center">
-                <div className="col-md-8">
-                    <div className="card shadow-sm">
-                        <div className="card-header">
-                            <h3 className="mb-0">Create New Account</h3>
-                        </div>
-                        <div className="card-body p-4">
-                            <form onSubmit={handleSubmit}>
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">First Name</label>
-                                        <input type="text" name="first_name" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Last Name</label>
-                                        <input type="text" name="last_name" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Email Address</label>
-                                        <input type="email" name="email" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Phone Number</label>
-                                        <input type="text" name="phone" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Date of Birth</label>
-                                        <input type="date" name="date_of_birth" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">National ID</label>
-                                        <input type="text" name="national_id" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Gender</label>
-                                        <select name="gender" className="form-select" required onChange={handleChange}>
-                                            <option value="">Select</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Marital Status</label>
-                                        <select name="marital_status" className="form-select" required onChange={handleChange}>
-                                            <option value="">Select</option>
-                                            <option value="Single">Single</option>
-                                            <option value="Married">Married</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Occupation</label>
-                                    <input type="text" name="occupation" className="form-control" required onChange={handleChange} />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Income</label>
-                                    <input type="number" name="income" className="form-control" required onChange={handleChange} />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Address</label>
-                                    <textarea name="address" className="form-control" required onChange={handleChange}></textarea>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-4 mb-3">
-                                        <label className="form-label">City</label>
-                                        <input type="text" name="city" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                    <div className="col-md-4 mb-3">
-                                        <label className="form-label">State</label>
-                                        <input type="text" name="state" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                    <div className="col-md-4 mb-3">
-                                        <label className="form-label">ZIP Code</label>
-                                        <input type="text" name="zip_code" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Account Type</label>
-                                    <select name="account_type" className="form-select" required onChange={handleChange}>
-                                        <option value="">Select</option>
-                                        <option value="savings">Savings Account</option>
-                                        <option value="current">Current Account</option>
-                                    </select>
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Branch</label>
-                                    <input type="text" name="branch" className="form-control" required onChange={handleChange} />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Opening Date</label>
-                                    <input type="date" name="opening_date" className="form-control" required onChange={handleChange} />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Password</label>
-                                    <input type="password" name="password" className="form-control" required onChange={handleChange} />
-                                </div>
-
-                                <button type="button" className="btn btn-secondary mb-3" onClick={handleOTP}>Verify Email</button>
-
-                                {otpSent && (
-                                    <div className="mb-3">
-                                        <label className="form-label">Enter OTP</label>
-                                        <input type="text" name="otp" className="form-control" required onChange={handleChange} />
-                                    </div>
-                                )}
-
-                                <button type="submit" className="btn btn-primary w-100">Create Account</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+  return (
+    <div className="container mt-5">
+      <h2 className="text-center mb-4">Register</h2>
+      <form onSubmit={handleSubmit} className="border p-4 shadow rounded">
+        <div className="row">
+          {[
+            { name: "first_name", label: "First Name" },
+            { name: "last_name", label: "Last Name" },
+            { name: "email", label: "Email" },
+            { name: "phone", label: "Phone" },
+            { name: "dob", label: "Date of Birth", type: "date" },
+            { name: "occupation", label: "Occupation" },
+            { name: "income", label: "Income", type: "number" },
+            { name: "address", label: "Street Address" },
+            { name: "city", label: "City" },
+            { name: "state", label: "State" },
+            { name: "zip_code", label: "Zip Code" },
+            { name: "country", label: "Country" },
+            { name: "balance", label: "Entry Deposit", type: "number" },
+            { name: "password", label: "Password", type: "password" },
+          ].map((field) => (
+            <div key={field.name} className="col-md-6 mb-3">
+              <label>{field.label}</label>
+              <input
+                type={field.type || "text"}
+                name={field.name}
+                className="form-control"
+                onChange={handleChange}
+                required
+              />
             </div>
+          ))}
+
+          <div className="col-md-6 mb-3">
+            <label>Gender</label>
+            <select name="gender" className="form-control" onChange={handleChange} required>
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div className="col-md-6 mb-3">
+            <label>Account Type</label>
+            <select name="account_type" className="form-control" onChange={handleChange} required>
+              <option value="">Select</option>
+              <option value="Savings">Savings</option>
+              <option value="Current">Current</option>
+            </select>
+          </div>
+
+          <div className="col-md-6 mb-3">
+            <label>Branch</label>
+            <select name="branch" className="form-control" onChange={handleChange} required>
+              <option value="">Select</option>
+              <option value="1">Main Branch</option>
+              <option value="2">City Branch</option>
+            </select>
+          </div>
         </div>
-    );
+        <button type="submit" className="btn btn-primary w-100">Register</button>
+      </form>
+    </div>
+  );
 };
 
 export default Register;
