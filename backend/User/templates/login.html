@@ -55,14 +55,16 @@
                             </div>
                         </div>
 
-                        <!--  _____________________Verfy email button _____________________ -->
+                        <!-- Commented out OTP verification section until implemented -->
+                        {% comment %}
+                        <!-- Verify email button -->
                         <div class="d-grid gap-2 mb-3">
                             <button type="button" class="btn btn-secondary" id="verify-email-btn">
                                 <i class="fas fa-envelope-open-text me-2"></i>Verify Email
                             </button>
                         </div>
-                        <!--  _____________________OTP Input Field (Hidden Initially) _____________________ -->
-
+                        
+                        <!-- OTP Input Field (Hidden Initially) -->
                         <div class="mb-3" id="otp-section" style="display: none;">
                             <label for="otp" class="form-label">Enter OTP</label>
                             <div class="input-group">
@@ -70,6 +72,7 @@
                                 <input type="text" class="form-control" id="otp" name="otp" placeholder="Enter OTP" required>
                             </div>
                         </div>
+                        {% endcomment %}
 
                         <div class="d-grid gap-2 mb-3">
                             <button type="submit" class="btn btn-primary btn-lg">
@@ -91,6 +94,9 @@
         </div>
     </div>
 </div>
+
+<!-- Commented out OTP JavaScript functionality until implemented -->
+{% comment %}
 <script>
     document.getElementById("verify-email-btn").addEventListener("click", function () {
         let email = document.getElementById("email").value;
@@ -122,5 +128,6 @@
         .catch(error => console.error("Error:", error));
     });
 </script>
+{% endcomment %}
 
 {% endblock %}

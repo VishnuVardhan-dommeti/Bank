@@ -26,49 +26,111 @@ from django.shortcuts import render
 def home(request):
     return render(request, 'home.html')
 
-from django.contrib.auth import authenticate, login as auth_login  # Rename to avoid conflict
-from django.shortcuts import render, redirect
+from django.contrib.auth.hashers import check_password
+from Custom_admin.models import Account, Customer
+
+
+
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.hashers import check_password
 from django.contrib import messages
+from django.shortcuts import render, redirect
+from Custom_admin.models import Account, Customer
+from django.contrib.auth import get_user_model
 
 def login_view(request):
+    # If user is already authenticated, redirect to dashboard
+    if request.user.is_authenticated:
+        return redirect('dashboard', username=request.user.first_name)
+    
     if request.method == 'POST':
-        email = request.POST.get('email')  # Changed from 'username' to 'email'
+        email = request.POST.get('email')
         password = request.POST.get('password')
         
-        if not email or not password:
-            messages.error(request, 'Please fill in both email and password')
-            return render(request, 'login.html')
-        
-        # Authenticate using email as username
-        user = authenticate(request, username=email, password=password)
-        
-        if user is not None:
-            auth_login(request, user)  # Using renamed import
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid email or password')
+        try:
+            # First try to authenticate with Django's auth system
+            user = authenticate(request, username=email, password=password)
+            
+            if user is not None:
+                login(request, user)
+                return redirect('dashboard', username=user.first_name)
+            else:
+                # Fallback to custom account check
+                customer = Customer.objects.get(email=email)
+                account = Account.objects.get(customer=customer)
+                
+                if check_password(password, account.password):
+                    # Get or create the Django user
+                    User = get_user_model()
+                    user, created = User.objects.get_or_create(
+                        username=email,
+                        defaults={
+                            'email': email,
+                            'first_name': customer.first_name,
+                            'last_name': customer.last_name,
+                            'password': make_password(password)  # Store hashed password
+                        }
+                    )
+                    
+                    if not created:
+                        # Update password if it changed
+                        if not user.check_password(password):
+                            user.set_password(password)
+                            user.save()
+                    
+                    login(request, user)
+                    return redirect('dashboard', username=user.first_name)
+                else:
+                    messages.error(request, 'Invalid password')
+        except Customer.DoesNotExist:
+            messages.error(request, 'Email not found')
+        except Account.DoesNotExist:
+            messages.error(request, 'Account not found')
     
     return render(request, 'login.html')
 
-@login_required
+
+from django.contrib.auth.decorators import login_required
+
+from django.contrib.auth.decorators import login_required
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+
+@login_required(login_url='/login/')
 def dashboard(request, username):
-    if request.user.username != username:
+    # Verify the username in URL matches the logged in user
+    if request.user.first_name.lower() != username.lower():
+        return redirect('dashboard', username=request.user.first_name)
+    
+    try:
+        customer = Customer.objects.get(user=request.user)
+        account = Account.objects.get(customer=customer)
+        balance = Balance.objects.get(account=account)
+        
+        # Get recent transactions
+        transactions = Transaction.objects.filter(account=account).order_by('-timestamp')[:10]
+        
+        return render(request, 'dashboard.html', {
+            'username': request.user.first_name,
+            'customer': customer,
+            'account': account,
+            'balance': balance,
+            'transactions': transactions
+        })
+    except (Customer.DoesNotExist, Account.DoesNotExist, Balance.DoesNotExist):
+        messages.error(request, 'Account information not found')
         return redirect('login')
-    return render(request, 'dashboard.html', {'username': username})
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
+    
+from django.contrib.auth import get_user_model
+from django.db import transaction  # Fixed import
 from django.contrib.auth.hashers import make_password
-from django.db import transaction as db_transaction
-from Custom_admin.models import Customer, Address, Account, Balance, AccountType, Branch, Transaction, Deposit
-from Custom_admin.serializers import CustomerSerializer, AddressSerializer, AccountSerializer
-import random
-import string
+from django.contrib import messages
+from django.shortcuts import render, redirect
 from datetime import datetime
-
-def generate_account_number():
-    """Generate exactly 12 uppercase alphanumeric characters"""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+import random
+from Custom_admin.models import (AccountType, Branch, Customer, Address, 
+                               Account, Balance, Transaction, Deposit)
 
 def register(request):
     # Ensure required AccountTypes and Branches exist
@@ -85,7 +147,7 @@ def register(request):
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         
-        # Add password validation
+        # Password validation
         if not password or password != confirm_password:
             messages.error(request, 'Passwords do not match or are empty')
             return redirect('register')
@@ -99,14 +161,27 @@ def register(request):
             return redirect('register')
 
         try:
-            with db_transaction.atomic():
-                # Generate UNIQUE 12-character account number
-                account_number = generate_account_number()
-                while Account.objects.filter(account_number=account_number).exists():
-                    account_number = generate_account_number()
+            with transaction.atomic():  # Changed from db_transaction to transaction
+                # Generate UNIQUE 12-digit account number
+                while True:
+                    account_number = str(random.randint(10**11, (10**12)-1))  # 12-digit number
+                    if not Account.objects.filter(account_number=account_number).exists():
+                        break
 
-                # 1. Create Customer
+                # 1. Create Django User
+                User = get_user_model()
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=request.POST.get('firstname'),
+                    last_name=request.POST.get('lastname')
+                )
+
+                # 2. Create Customer
                 customer = Customer.objects.create(
+                    user=user,
+                    employee_id=request.POST.get('employee'),
                     first_name=request.POST.get('firstname'),
                     last_name=request.POST.get('lastname'),
                     email=email,
@@ -117,7 +192,7 @@ def register(request):
                     income=float(request.POST.get('income', 0.00))
                 )
 
-                # 2. Create Address
+                # 3. Create Address
                 Address.objects.create(
                     customer=customer,
                     street=request.POST.get('address'),
@@ -127,28 +202,28 @@ def register(request):
                     country=request.POST.get('country')
                 )
 
-                # 3. Get Account Type and Branch
+                # 4. Get Account Type and Branch
                 account_type = AccountType.objects.get(name=request.POST.get('account_type').lower())
                 branch = Branch.objects.get(branch_name=request.POST.get('branch').lower())
 
-                # 4. Create Account - let the model handle password hashing
+                # 5. Create Account
                 account = Account.objects.create(
                     customer=customer,
                     account_type=account_type,
                     branch=branch,
                     account_number=account_number,
                     balance_amount=float(request.POST.get('initial_deposit', 0.00)),
-                    password=make_password(password),  # Will be hashed by model's save()
+                    password=make_password(password),
                     last_transaction_date=datetime.now()
                 )
 
-                # 5. Create Balance
+                # 6. Create Balance
                 Balance.objects.create(
                     account=account,
                     balance=float(request.POST.get('initial_deposit', 0.00))
                 )
 
-                # 6. Create Transaction if deposit > 0
+                # 7. Create Transaction if deposit > 0
                 initial_deposit = float(request.POST.get('initial_deposit', 0.00))
                 if initial_deposit > 0:
                     deposit_txn = Transaction.objects.create(

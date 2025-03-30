@@ -1,17 +1,36 @@
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from .models import Customer, Address, Account, Balance, AccountType, Branch, Transaction
 
+User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
 class CustomerSerializer(serializers.ModelSerializer):
+    user = UserSerializer(required=True)
+    
     class Meta:
         model = Customer
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 
-                'date_of_birth', 'gender', 'occupation', 'income', 'employee']
+        fields = ['id', 'user', 'employee', 'first_name', 'last_name', 'email', 'phone', 
+                'date_of_birth', 'gender', 'occupation', 'income']
         extra_kwargs = {
             'email': {'required': True},
             'phone': {'required': True},
             'gender': {'required': True},
             'date_of_birth': {'required': True}
         }
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        user = User.objects.create_user(**user_data)
+        customer = Customer.objects.create(user=user, **validated_data)
+        return customer
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:

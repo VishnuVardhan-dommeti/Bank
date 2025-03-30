@@ -2,6 +2,9 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
+from django.db import models
+
 
 # 🔹 Branch Model
 class Branch(models.Model):
@@ -30,6 +33,14 @@ class Employee(models.Model):
 
 # 🔹 Customer Model
 class Customer(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="customer",
+        
+        null=True,  # Temporary to allow migration
+        blank=True
+    )
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, related_name="customers")
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
