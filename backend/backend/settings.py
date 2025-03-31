@@ -87,7 +87,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "bigdb",
+        "NAME": "banking_db",
         "USER": "root",
         "PASSWORD": "rootpass",
         "HOST": "localhost",

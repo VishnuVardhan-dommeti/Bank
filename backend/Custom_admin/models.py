@@ -85,7 +85,7 @@ class Account(models.Model):
     account_type = models.ForeignKey(AccountType, on_delete=models.CASCADE, related_name="accounts")
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="accounts")
     account_number = models.CharField(max_length=12, unique=True, editable=False, default=uuid.uuid4)
-    balance_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
+    
     password = models.CharField(max_length=128)
     
     last_transaction_date = models.DateTimeField(null=True, blank=True)
@@ -156,18 +156,21 @@ class TransferIn(models.Model):
 # 🔹 Balance Model
 class Balance(models.Model):
     account = models.OneToOneField(Account, on_delete=models.CASCADE, related_name="balance")
-    balance = models.DecimalField(max_digits=15, decimal_places=2)
+    balance_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     updated_at = models.DateTimeField(auto_now=True)
 
-# 🔹 Login Model
 class Login(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE,null = True, blank = True)
+    customer_name = models.CharField(max_length=255, null = True, blank = True)
+    account_number = models.CharField(max_length=50, null=True, blank=True)  # Store account number
     timestamp = models.DateTimeField(auto_now_add=True)
 
-# 🔹 Logout Model
 class Logout(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null = True, blank = True)
+    customer_name = models.CharField(max_length=255, null = True, blank = True)  # Store name
+    account_number = models.CharField(max_length=50, null=True, blank=True)  # Store account number
     timestamp = models.DateTimeField(auto_now_add=True)
+
 
 # 🔹 Edit Account Model
 class EditAccount(models.Model):

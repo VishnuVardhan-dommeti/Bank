@@ -18,14 +18,14 @@
                     {% endfor %}
                     {% endif %}
 
-                    <form id="deposit-form" method="POST" action="{% url 'deposit' username=request.user.username %}" class="needs-validation" novalidate>
+                    <form id="deposit-form" method="POST" action="{% url 'deposit' username=request.customer.user.username %}" class="needs-validation" novalidate>
                         {% csrf_token %}
 
                         <div class="mb-3">
                             <label for="account_number" class="form-label">Account Number</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-university"></i></span>
-                                <input type="text" class="form-control" id="account_number" name="account_number" value="{{ request.user.account.account_number }}" readonly>
+                                <input type="text" class="form-control" id="account_number" name="account_number" value="{{ request.customer.user.account.account_number }}" readonly>
                             </div>
                         </div>
 
@@ -45,7 +45,7 @@
                     </form>
 
                     <div class="text-center mt-3">
-                        <a href="{% url 'dashboard' username=request.user.username %}" class="text-decoration-none">
+                        <a href="{% url 'dashboard' username=request.customer.user.username %}" class="text-decoration-none">
                             <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
                         </a>
                     </div>

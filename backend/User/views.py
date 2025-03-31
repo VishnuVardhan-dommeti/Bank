@@ -27,40 +27,43 @@ def home(request):
     return render(request, 'home.html')
 
 from django.contrib.auth.hashers import check_password
-from Custom_admin.models import Account, Customer
-
-
-
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from Custom_admin.models import Account, Customer
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from Custom_admin.models import Account, Customer, Login, Logout  # Import Login & Logout models
 
 def login_view(request):
-    # If user is already authenticated, redirect to dashboard
     if request.user.is_authenticated:
         return redirect('dashboard', username=request.user.first_name)
-    
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
+
         try:
-            # First try to authenticate with Django's auth system
             user = authenticate(request, username=email, password=password)
-            
+
             if user is not None:
                 login(request, user)
-                return redirect('dashboard', username=user.first_name)
-            else:
-                # Fallback to custom account check
                 customer = Customer.objects.get(email=email)
-                account = Account.objects.get(customer=customer)
-                
-                if check_password(password, account.password):
-                    # Get or create the Django user
+                account = Account.objects.filter(customer=customer).first()
+
+                if account:
+                    Login.objects.create(
+                        customer=customer,
+                        customer_name=f"{customer.first_name} {customer.last_name}",
+                        account_number=account.account_number  # Store account number
+                    )
+
+                return redirect('dashboard', username=user.first_name)
+
+            else:
+                customer = Customer.objects.get(email=email)
+                account = Account.objects.filter(customer=customer).first()
+
+                if account and check_password(password, account.password):
                     User = get_user_model()
                     user, created = User.objects.get_or_create(
                         username=email,
@@ -68,17 +71,18 @@ def login_view(request):
                             'email': email,
                             'first_name': customer.first_name,
                             'last_name': customer.last_name,
-                            'password': make_password(password)  # Store hashed password
+                            'password': account.password  
                         }
                     )
-                    
-                    if not created:
-                        # Update password if it changed
-                        if not user.check_password(password):
-                            user.set_password(password)
-                            user.save()
-                    
+
                     login(request, user)
+
+                    Login.objects.create(
+                        customer=customer,
+                        customer_name=f"{customer.first_name} {customer.last_name}",
+                        account_number=account.account_number  # Store account number
+                    )
+
                     return redirect('dashboard', username=user.first_name)
                 else:
                     messages.error(request, 'Invalid password')
@@ -86,8 +90,10 @@ def login_view(request):
             messages.error(request, 'Email not found')
         except Account.DoesNotExist:
             messages.error(request, 'Account not found')
-    
+
     return render(request, 'login.html')
+
+
 
 
 from django.contrib.auth.decorators import login_required
@@ -212,7 +218,7 @@ def register(request):
                     account_type=account_type,
                     branch=branch,
                     account_number=account_number,
-                    balance_amount=float(request.POST.get('initial_deposit', 0.00)),
+                    
                     password=make_password(password),
                     last_transaction_date=datetime.now()
                 )
@@ -220,7 +226,7 @@ def register(request):
                 # 6. Create Balance
                 Balance.objects.create(
                     account=account,
-                    balance=float(request.POST.get('initial_deposit', 0.00))
+                    balance_amount=float(request.POST.get('initial_deposit', 0.00))
                 )
 
                 # 7. Create Transaction if deposit > 0
@@ -253,10 +259,30 @@ def password_reset(request):
         form = PasswordResetForm()
     return render(request, 'password_reset.html', {'form': form})
 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from Custom_admin.models import Logout, Customer
+
 @login_required
 def logout_view(request):
+    try:
+        customer = Customer.objects.get(email=request.user.email)
+        account = Account.objects.filter(customer=customer).first()
+
+        if account:
+            Logout.objects.create(
+                customer=customer,
+                customer_name=f"{customer.first_name} {customer.last_name}",
+                account_number=account.account_number  # Store account number
+            )
+    except Customer.DoesNotExist:
+        pass  
+
     logout(request)
     return redirect('login')
+
+
 
 @login_required
 def my_profile(request, username):
